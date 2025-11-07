@@ -32,67 +32,78 @@
             program = "${pkgs.writeShellScript "droid-launcher" ''
               set -euo pipefail
 
-              # Work in a predictable directory (cache within CWD)
-              DROID_PATH="./droid"
+              # Work in a predictable directory ~/.local/bin
+              EXECUTABLE_DIRECTORY="$HOME/.local/bin"
+              mkdir -p "$EXECUTABLE_DIRECTORY"
+              DROID_PATH="$EXECUTABLE_DIRECTORY/droid"
 
-              # If we already have a droid binary, try to use it
-              if [ -x "$DROID_PATH" ]; then
-                exec "$DROID_PATH" "$@"
-              fi
-
-              echo "Detecting latest Factory CLI version..." >&2
-
-              ver_line="$(${pkgs.curl}/bin/curl -fsSL https://app.factory.ai/cli | ${pkgs.gnugrep}/bin/grep -m1 'VER=')" || {
-                echo "Failed to fetch https://app.factory.ai/cli" >&2
-                exit 1
+              # Function to get the latest version from the web
+              get_latest_version() {
+                ver_line="$(${pkgs.curl}/bin/curl -fsSL https://app.factory.ai/cli 2>&- | ${pkgs.gnugrep}/bin/grep -m1 'VER=')" || {
+                  echo "Failed to fetch https://app.factory.ai/cli" >&2
+                  return 1
+                }
+                
+                ver="$(printf '%s\n' "$ver_line" | ${pkgs.gnused}/bin/sed -E 's/.*VER="([^"]+)".*/\1/')" || ver=""
+                if [ -z "$ver" ]; then
+                  echo "Could not parse VER from: $ver_line" >&2
+                  return 1
+                fi
+                
+                echo "$ver"
               }
 
-              ver="$(printf '%s\n' "$ver_line" | ${pkgs.gnused}/bin/sed -E 's/.*VER="([^"]+)".*/\1/')" || ver=""
-              if [ -z "$ver" ]; then
-                echo "Could not parse VER from: $ver_line" >&2
-                exit 1
-              fi
-
-              echo "Using Factory CLI version: $ver (arch: ${arch})" >&2
-
-              url="https://downloads.factory.ai/factory-cli/releases/$ver/linux/${arch}/droid"
-
-              # Download fresh binary
-              ${pkgs.curl}/bin/curl -fL -o "$DROID_PATH" "$url" || {
-                echo "Failed to download droid from: $url" >&2
-                exit 1
+              # Function to get the local version
+              get_local_version() {
+                if [ -x "$DROID_PATH" ]; then
+                  "$DROID_PATH" --version 2>&1 | tail -1 || echo ""
+                else
+                  echo ""
+                fi
               }
 
-              chmod +x "$DROID_PATH"
+              # Function to download and install droid
+              install_droid() {
+                local ver="$1"
+                
+                url="https://downloads.factory.ai/factory-cli/releases/$ver/linux/${arch}/droid"
+                
+                ${pkgs.curl}/bin/curl -fL -o "$DROID_PATH" "$url" 2>&- || {
+                  echo "Failed to download droid from: $url" >&2
+                  return 1
+                }
+                
+                chmod +x "$DROID_PATH"
+                
+                ${pkgs.patchelf}/bin/patchelf \
+                  --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" \
+                  "$DROID_PATH"
+                
+                chmod +x "$DROID_PATH"
+              }
 
-              # Patch interpreter for NixOS
-              ${pkgs.patchelf}/bin/patchelf \
-                --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" \
-                "$DROID_PATH"
+              # Check if we need to update
+              local_version="$(get_local_version)"
 
-              chmod +x "$DROID_PATH"
+              if [ -z "$local_version" ]; then
+                # No local version, install
+                echo "Installing Factory CLI..." >&2
+                latest_version="$(get_latest_version)"
+                install_droid "$latest_version"
+                echo "Installed Factory CLI version: $latest_version" >&2
+              else
+                # Check for updates
+                latest_version="$(get_latest_version)"
+                
+                if [ "$local_version" != "$latest_version" ]; then
+                  echo "Updating Factory CLI from $local_version to $latest_version..." >&2
+                  install_droid "$latest_version"
+                fi
+              fi
 
               # Hand off to droid with all original args
               exec "$DROID_PATH" "$@"
             ''}";
-          };
-        }
-      );
-
-      # Optional: devShells for hacking on this flake
-      devShells = forAllSystems (
-        system:
-        let
-          pkgs = import nixpkgs { inherit system; };
-        in
-        {
-          default = pkgs.mkShell {
-            packages = [
-              pkgs.curl
-              pkgs.patchelf
-              pkgs.gnugrep
-              pkgs.gnused
-            ];
           };
         }
       );
