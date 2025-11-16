@@ -33,7 +33,8 @@
               set -euo pipefail
 
               # Work in a predictable directory ~/.local/bin
-              EXECUTABLE_DIRECTORY="$HOME/.local/bin"
+              # EXECUTABLE_DIRECTORY="$HOME/.local/bin"
+              EXECUTABLE_DIRECTORY="/tmp"
               mkdir -p "$EXECUTABLE_DIRECTORY"
               DROID_PATH="$EXECUTABLE_DIRECTORY/droid"
 
