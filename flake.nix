@@ -32,9 +32,10 @@
             program = "${pkgs.writeShellScript "droid-launcher" ''
               set -euo pipefail
 
-              # Work in a predictable directory (cache within CWD)
-              mkdir -p ~/.local/bin
-              DROID_PATH="~/.local/bin/droid"
+              # Work in a predictable directory ~/.local/bin
+              EXECUTABLE_DIRECTORY="$HOME/.local/bin"
+              mkdir -p "$EXECUTABLE_DIRECTORY"
+              DROID_PATH="$EXECUTABLE_DIRECTORY/droid"
 
               # If we already have a droid binary, try to use it
               if [ -x "$DROID_PATH" ]; then
