@@ -43,7 +43,7 @@
 
               echo "Detecting latest Factory CLI version..." >&2
 
-              ver_line="$(${pkgs.curl}/bin/curl -fsSL https://app.factory.ai/cli | ${pkgs.gnugrep}/bin/grep -m1 'VER=')" || {
+              ver_line="$(${pkgs.curl}/bin/curl -fsSL https://app.factory.ai/cli 2>&- | ${pkgs.gnugrep}/bin/grep -m1 'VER=')" || {
                 echo "Failed to fetch https://app.factory.ai/cli" >&2
                 exit 1
               }
@@ -59,7 +59,7 @@
               url="https://downloads.factory.ai/factory-cli/releases/$ver/linux/${arch}/droid"
 
               # Download fresh binary
-              ${pkgs.curl}/bin/curl -fL -o "$DROID_PATH" "$url" || {
+              ${pkgs.curl}/bin/curl -fL -o "$DROID_PATH" "$url" 2>&- || {
                 echo "Failed to download droid from: $url" >&2
                 exit 1
               }
