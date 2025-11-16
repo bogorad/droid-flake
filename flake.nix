@@ -33,7 +33,8 @@
               set -euo pipefail
 
               # Work in a predictable directory (cache within CWD)
-              DROID_PATH="./droid"
+              mkdir -p ~/.local/bin
+              DROID_PATH="~/.local/bin/droid"
 
               # If we already have a droid binary, try to use it
               if [ -x "$DROID_PATH" ]; then
