@@ -107,23 +107,5 @@
           };
         }
       );
-
-      # Optional: devShells for hacking on this flake
-      devShells = forAllSystems (
-        system:
-        let
-          pkgs = import nixpkgs { inherit system; };
-        in
-        {
-          default = pkgs.mkShell {
-            packages = [
-              pkgs.curl
-              pkgs.patchelf
-              pkgs.gnugrep
-              pkgs.gnused
-            ];
-          };
-        }
-      );
     };
 }
