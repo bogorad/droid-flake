@@ -40,18 +40,17 @@
 
               # Function to get the latest version from the web
               get_latest_version() {
-                ver_line="$(${pkgs.curl}/bin/curl -fsSL https://app.factory.ai/cli 2>&- | ${pkgs.gnugrep}/bin/grep -m1 'VER=')" || {
-                  echo "Failed to fetch https://app.factory.ai/cli" >&2
-                  return 1
-                }
+                local url="https://app.factory.ai/cli"
                 
-                ver="$(printf '%s\n' "$ver_line" | ${pkgs.gnused}/bin/sed -E 's/.*VER="([^"]+)".*/\1/')" || ver=""
-                if [ -z "$ver" ]; then
-                  echo "Could not parse VER from: $ver_line" >&2
+                # Fetch version and HTTP code in one go
+                read -r ver code <<< "$(${pkgs.curl}/bin/curl --silent --write-out " %{http_code}" "$url" | ${pkgs.gawk}/bin/awk -F'"' '/VER=/ {v=$2} END {print v$0}')"
+                
+                if [ "$code" = "200" ] && [ -n "$ver" ]; then
+                  echo "$ver"
+                else
+                  echo "Failed to fetch version (HTTP $code)" >&2
                   return 1
                 fi
-                
-                echo "$ver"
               }
 
               # Function to get the local version
