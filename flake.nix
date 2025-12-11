@@ -101,6 +101,16 @@
                 fi
               fi
 
+              # --- Symlink rg (ripgrep) ---
+              # Ensure target directories exist
+              mkdir -p "$HOME/.factory/bin"
+              mkdir -p "$HOME/.local/bin"
+
+              # Create symlinks to the nixpkgs ripgrep binary
+              ln -sf "${pkgs.ripgrep}/bin/rg" "$HOME/.factory/bin/rg"
+              ln -sf "${pkgs.ripgrep}/bin/rg" "$HOME/.local/bin/rg"
+              # ----------------------------
+
               # Hand off to droid with all original args
               exec "$DROID_PATH" "$@"
             ''}";
