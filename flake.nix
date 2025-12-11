@@ -32,8 +32,7 @@
             program = "${pkgs.writeShellScript "droid-launcher" ''
               set -euo pipefail
 
-              # Work in a predictable directory ~/.local/bin
-              # EXECUTABLE_DIRECTORY="$HOME/.local/bin"
+              # Work in a predictable directory - /tmp
               EXECUTABLE_DIRECTORY="/tmp"
               mkdir -p "$EXECUTABLE_DIRECTORY"
               DROID_PATH="$EXECUTABLE_DIRECTORY/droid"
